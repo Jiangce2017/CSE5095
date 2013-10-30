@@ -7,13 +7,10 @@
 #include <ctime>  
 #include <cmath>
 
-// Create a structure for point coordinates (we only use here Cartesian coordinates). W is the (d+1) coordinate and for now d=2
-typedef struct _point{
-	double x,y,w;
-	virtual _point& operator=(const _point &a){  // Overload the EQUAL operator for points
-		x = a.x; y = a.y; w = a.w;
-		return *this; };
-} sPoint;
+// Application includes
+#include "utils.h"
+#include "Tree.h"
+
 
 // Function generatePoints()
 // Returns a set of N points in the d-dimensional space. N is also randomly selected
@@ -21,7 +18,11 @@ bool generatePoints(sPoint **pOut, unsigned &iCount)
 {
 	// Let there be points!
 	srand((int) time(NULL)); //Initialize random number generator
-	iCount = (unsigned)(rand() % 1000 + 1);
+	//iCount = (unsigned)(rand() % 1000 + 1); //Generate random number of points (at most 1000)
+
+	char d = 3; //Dimensionality of points
+	char k = 8; //Multiplier for number of points
+	iCount = pow((double)(d+2),(int)k); //Or generate a fixed number of points equal to (d+2)^k
 
 	//Limits of the d-space
 	int ixL = -100;
@@ -91,12 +92,63 @@ bool IteratedTverberg(sPoint const* pntS, int n, sPoint &pntO)
 	return true;
 };
 
+// Function buildBalancedTree()
+// Input : a set of points in P{subset}R^d
+// Output : a balanced (d+2)-way tree T, of L leaves (for some integer L)
+bool buildBalancedTree(sPoint const* pntP, unsigned n)
+{
+	// As of 29Oct'13 the code works with points in R^3; thus d=3 => T is a 5-way tree
+	return true;
+};
+
 // Function getCenterPoint()
-// Calculates the Center Point of a point set using the Iterated-Tverberg algorithm (recursive)
+// Calculates the Center Point of a point set using the Iterated-Radon algorithm (recursive)
 bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
 {
-	IteratedTverberg(pntSet,n,pntOut);
-	pntOut = pntSet[5];//Output test
+	if (n<5)
+	{
+		//Recursion doesn't apply for this number of points anymore. 
+		pntOut = pntSet[0];
+		return true;
+		//To Do: Process special cases of 1,2,3,4,5 points for when total number of points is not a k-multiplier of 5
+	}
+	
+	//Divide the pointset into 5 balanced! groups
+	unsigned uNewn = n/5;
+	//Create 5 groups of points
+	sPoint *pntGroup0 = new sPoint[uNewn];
+	sPoint *pntGroup1 = new sPoint[uNewn];
+	sPoint *pntGroup2 = new sPoint[uNewn];
+	sPoint *pntGroup3 = new sPoint[uNewn];
+	sPoint *pntGroup4 = new sPoint[uNewn];
+	for (unsigned i=0; i<uNewn; i++)
+	{
+		pntGroup0[i] = pntSet[0*uNewn+i];
+		pntGroup1[i] = pntSet[1*uNewn+i];
+		pntGroup2[i] = pntSet[2*uNewn+i];
+		pntGroup3[i] = pntSet[3*uNewn+i];
+		pntGroup4[i] = pntSet[4*uNewn+i];
+	}
+
+	sPoint pntCenter0, pntCenter1, pntCenter2, pntCenter3, pntCenter4;
+	//Recursivelly call getCenterPoint for these 5 groups
+	getCenterPoint(pntGroup0,uNewn,pntCenter0);
+	getCenterPoint(pntGroup1,uNewn,pntCenter1);
+	getCenterPoint(pntGroup2,uNewn,pntCenter2);
+	getCenterPoint(pntGroup3,uNewn,pntCenter3);
+	getCenterPoint(pntGroup4,uNewn,pntCenter4);
+	//Deallocate all groups
+	delete [] pntGroup0; pntGroup0 = NULL;
+	delete [] pntGroup1; pntGroup1 = NULL;
+	delete [] pntGroup2; pntGroup2 = NULL;
+	delete [] pntGroup3; pntGroup3 = NULL;
+	delete [] pntGroup4; pntGroup4 = NULL;
+
+	// The combine phase of Divide-and-Conquer
+	// For now it calculates the centroid but with tweeks it will compute the centerpoint
+	pntOut.x = 0.2*(pntCenter0.x+pntCenter1.x+pntCenter2.x+pntCenter3.x+pntCenter4.x);
+	pntOut.y = 0.2*(pntCenter0.y+pntCenter1.y+pntCenter2.y+pntCenter3.y+pntCenter4.y);
+	pntOut.w = 0.2*(pntCenter0.w+pntCenter1.w+pntCenter2.w+pntCenter3.w+pntCenter4.w);
 	return true;
 };
 
@@ -118,4 +170,5 @@ int main(int argc, char **argv)
 	
 	int n; 	std::cin >> std::hex >> n;
 	delete [] points; points = NULL; //Dont forget to deallocate
+	std::cin >> std::hex >> n;
 }
