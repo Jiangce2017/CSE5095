@@ -20,30 +20,42 @@ bool generatePoints(sPoint **pOut, unsigned &iCount)
 	srand((int) time(NULL)); //Initialize random number generator
 	//iCount = (unsigned)(rand() % 1000 + 1); //Generate random number of points (at most 1000)
 
-	char d = 3; //Dimensionality of points
-	char k = 8; //Multiplier for number of points
-	iCount = pow((double)(d+2),(int)k); //Or generate a fixed number of points equal to (d+2)^k
+	char d = 3; //Dimensionality of points (in the projection to the paraboloid)
+	char k = 1; //Multiplier for number of points
+	iCount = (unsigned) pow((double)(d+2),k); //Or generate a fixed number of points equal to (d+2)^k
 
 	//Limits of the d-space
 	int ixL = -100;
 	int ixU = 100;
 	int iyL = -100;
 	int iyU = 100;
+	int irangeX = ixU - ixL;
+	int irangeY = iyU - iyL;
 
 	//Allocate the list of points and give random coordinate values
 	*pOut = new sPoint[iCount];
 	sPoint pntCurrent;
 	for (unsigned i=0; i<iCount; i++)
 	{
-		pntCurrent.x = (rand() % (ixU - ixL) + 1)+ixL;
-		pntCurrent.y = (rand() % (iyU - iyL) + 1)+iyL;
+		//1st strategy of generating random points
+		//pntCurrent.x = (rand() % irangeX + 1) + ixL;
+		//pntCurrent.y = (rand() % irangeY + 1) + iyL;
+
+		//2nd strategy of generating random points
+		double rand1 = (rand() % irangeX + 1) + ixL;
+		double rand2 = (rand() % irangeX + 1) + ixL;
+		(rand2 != 0.0f) ? pntCurrent.x = rand1/rand2 : pntCurrent.x = rand1/3.1415; //x-coord as a ratio of two random numbers
+		rand1 = (rand() % irangeY + 1) + iyL;
+		rand2 = (rand() % irangeY + 1) + iyL;
+		(rand2 != 0.0f) ? pntCurrent.y = rand1/rand2 : pntCurrent.y = rand1/3.1415; //y-coord as a ratio of two random numbers
+
 		// The points are automatically lifted onto the paraboloid: p_(d+1) = [p_d,(norm(p_d)^2]'
 		pntCurrent.w = pntCurrent.x * pntCurrent.x + pntCurrent.y * pntCurrent.y;
 		(*pOut)[i] = pntCurrent;
 	}
 	//Output the points for debugging
-	//for (unsigned i=0; i<iCount; i++)
-	//	printf("P[%d] = {%f,%f,%f}\n",i,(*pOut)[i].x,(*pOut)[i].y,(*pOut)[i].w);
+	for (unsigned i=0; i<iCount; i++)
+		printf("P[%d] = {%f,%f,%f}\n",i,(*pOut)[i].x,(*pOut)[i].y,(*pOut)[i].w);
 
 	// ToDo:
 	// Create error catch for various stuff that might happen
@@ -101,6 +113,18 @@ bool buildBalancedTree(sPoint const* pntP, unsigned n)
 	return true;
 };
 
+// Function getCenter5()
+// Input: 5 points in R^3 (in general position)
+// Output: centerpoint (a Radon point)
+bool getCenter5(sPoint const* pntIn, sPoint &pntOut)
+{
+	// There's no error catch if number of points passed is different than 5 so it better be the right number
+	// There can be two cases (assuming general position):
+	//		1. One of the points is inside the triangular pyramid formed by the other 4 - then return the inside point
+	//		2. The 5 points describe a hexahedron (triangular dipyramid) - then the result is any of the points
+	return true;
+}
+
 // Function getCenterPoint()
 // Calculates the Center Point of a point set using the Iterated-Radon algorithm (recursive)
 bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
@@ -114,41 +138,32 @@ bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
 	}
 	
 	//Divide the pointset into 5 balanced! groups
-	unsigned uNewn = n/5;
-	//Create 5 groups of points
-	sPoint *pntGroup0 = new sPoint[uNewn];
-	sPoint *pntGroup1 = new sPoint[uNewn];
-	sPoint *pntGroup2 = new sPoint[uNewn];
-	sPoint *pntGroup3 = new sPoint[uNewn];
-	sPoint *pntGroup4 = new sPoint[uNewn];
-	for (unsigned i=0; i<uNewn; i++)
-	{
-		pntGroup0[i] = pntSet[0*uNewn+i];
-		pntGroup1[i] = pntSet[1*uNewn+i];
-		pntGroup2[i] = pntSet[2*uNewn+i];
-		pntGroup3[i] = pntSet[3*uNewn+i];
-		pntGroup4[i] = pntSet[4*uNewn+i];
-	}
+	unsigned uNewn = n/5; //n for now is a multiplier of 5 so division is always .0000
 
-	sPoint pntCenter0, pntCenter1, pntCenter2, pntCenter3, pntCenter4;
-	//Recursivelly call getCenterPoint for these 5 groups
-	getCenterPoint(pntGroup0,uNewn,pntCenter0);
-	getCenterPoint(pntGroup1,uNewn,pntCenter1);
-	getCenterPoint(pntGroup2,uNewn,pntCenter2);
-	getCenterPoint(pntGroup3,uNewn,pntCenter3);
-	getCenterPoint(pntGroup4,uNewn,pntCenter4);
-	//Deallocate all groups
-	delete [] pntGroup0; pntGroup0 = NULL;
-	delete [] pntGroup1; pntGroup1 = NULL;
-	delete [] pntGroup2; pntGroup2 = NULL;
-	delete [] pntGroup3; pntGroup3 = NULL;
-	delete [] pntGroup4; pntGroup4 = NULL;
+	//Create 5 groups of points and populate with points from the input set
+	sPoint **pntGroup = new sPoint*[5];
+	sPoint *ppntCenter = new sPoint[5];
+	for (char i=0; i<5; i++)
+	{
+		pntGroup[i] = new sPoint[uNewn];
+		for (unsigned j=0; j<uNewn; j++)
+			pntGroup[i][j] = pntSet[i*uNewn+j];
+		//Recursivelly call getCenterPoint for these 5 groups
+		getCenterPoint(pntGroup[i],uNewn,ppntCenter[i]);
+		//When done dispose of the current group (out of 5)
+		delete [] pntGroup[i];
+	}
+	//Deallocate all 5 groups
+	delete [] pntGroup; pntGroup = NULL;
 
 	// The combine phase of Divide-and-Conquer
 	// For now it calculates the centroid but with tweeks it will compute the centerpoint
-	pntOut.x = 0.2*(pntCenter0.x+pntCenter1.x+pntCenter2.x+pntCenter3.x+pntCenter4.x);
-	pntOut.y = 0.2*(pntCenter0.y+pntCenter1.y+pntCenter2.y+pntCenter3.y+pntCenter4.y);
-	pntOut.w = 0.2*(pntCenter0.w+pntCenter1.w+pntCenter2.w+pntCenter3.w+pntCenter4.w);
+	pntOut.x = 0.2*(ppntCenter[0].x+ppntCenter[1].x+ppntCenter[2].x+ppntCenter[3].x+ppntCenter[4].x);
+	pntOut.y = 0.2*(ppntCenter[0].y+ppntCenter[1].y+ppntCenter[2].y+ppntCenter[3].y+ppntCenter[4].y);
+	pntOut.w = 0.2*(ppntCenter[0].w+ppntCenter[1].w+ppntCenter[2].w+ppntCenter[3].w+ppntCenter[4].w);
+
+	//Deallocate current 5 center points
+	delete [] ppntCenter; ppntCenter = NULL;
 	return true;
 };
 
@@ -170,5 +185,4 @@ int main(int argc, char **argv)
 	
 	int n; 	std::cin >> std::hex >> n;
 	delete [] points; points = NULL; //Dont forget to deallocate
-	std::cin >> std::hex >> n;
 }
