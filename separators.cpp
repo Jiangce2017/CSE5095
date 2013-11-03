@@ -113,6 +113,31 @@ bool buildBalancedTree(sPoint const* pntP, unsigned n)
 	return true;
 };
 
+
+// Function cross(): returns the cross product of two vectors a and b
+sPoint cross(sPoint const* a, sPoint const* b)
+{
+	sPoint result;
+	result.x = (a->y * b->w) - (a->w * b->y);
+	result.y = -1*(a->x * b->w) + (a->w * b->x);
+	result.w = (a->x * b->y) - (a->y * b->x);
+	return result;
+}
+
+// Function dot(): returns the dot product of two vectors a and b
+double dot(sPoint const* a, sPoint const* b)
+{
+	return (a->x * b->x) + (a->y * b->y) + (a->w * b->w);
+}
+
+// Function signedVolume(): returns the sign of the mix product A{dot}(B{cross}C)
+int signedVolume(sPoint const* a, sPoint const* b, sPoint const* c)
+{
+	int result;
+	(dot(a,&cross(b,c)) < 0.0f) ? result = -1 : result = 1;
+	return result;
+}
+
 // Function getCenter5()
 // Input: 5 points in R^3 (in general position)
 // Output: centerpoint (a Radon point)
@@ -122,6 +147,12 @@ bool getCenter5(sPoint const* pntIn, sPoint &pntOut)
 	// There can be two cases (assuming general position):
 	//		1. One of the points is inside the triangular pyramid formed by the other 4 - then return the inside point
 	//		2. The 5 points describe a hexahedron (triangular dipyramid) - then the result is any of the points
+	//pntOut = pntIn[0]; //Test output
+	pntOut = cross(&pntIn[0],&pntIn[1]);
+	int d = signedVolume(&pntIn[0],&pntIn[1],&pntIn[2]);
+	std::cout << d << std::endl;
+	sPoint test = pntIn[0]-pntIn[1];
+	printf("Difference: [%f,%f,%f]\n",test.x,test.y,test.w);
 	return true;
 }
 
@@ -158,9 +189,11 @@ bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
 
 	// The combine phase of Divide-and-Conquer
 	// For now it calculates the centroid but with tweeks it will compute the centerpoint
-	pntOut.x = 0.2*(ppntCenter[0].x+ppntCenter[1].x+ppntCenter[2].x+ppntCenter[3].x+ppntCenter[4].x);
-	pntOut.y = 0.2*(ppntCenter[0].y+ppntCenter[1].y+ppntCenter[2].y+ppntCenter[3].y+ppntCenter[4].y);
-	pntOut.w = 0.2*(ppntCenter[0].w+ppntCenter[1].w+ppntCenter[2].w+ppntCenter[3].w+ppntCenter[4].w);
+	//pntOut.x = 0.2*(ppntCenter[0].x+ppntCenter[1].x+ppntCenter[2].x+ppntCenter[3].x+ppntCenter[4].x);
+	//pntOut.y = 0.2*(ppntCenter[0].y+ppntCenter[1].y+ppntCenter[2].y+ppntCenter[3].y+ppntCenter[4].y);
+	//pntOut.w = 0.2*(ppntCenter[0].w+ppntCenter[1].w+ppntCenter[2].w+ppntCenter[3].w+ppntCenter[4].w);
+
+	getCenter5(ppntCenter,pntOut);
 
 	//Deallocate current 5 center points
 	delete [] ppntCenter; ppntCenter = NULL;
