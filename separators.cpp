@@ -201,46 +201,58 @@ bool solveLinSys(void)
 	//double sys[4][5] = {{1,2,-3,4,5},{1,-5,6,4,-2},{-3,5,-1,4,6},{1,1,1,1,1}};
 	// Result should be: {0.028133;0.585678;-0.322251;0.708440}
 
+	//create input (for debugging)
+	double **set = new double*[4];
+	for (char i=0; i<4; i++)
+		set[i] = new double[5];
+
+	// Create a copy of the input (may not be needed) - the augmented matrix
 	double **aug = new double*[4];
 	for (char i=0; i<4; i++)
 		aug[i] = new double[5];
 
+	// Populate the input set and copy into augmented matrix (for debugging)
 	for (char i=0; i<4; i++)
-		for (char j=0; j<5; j++)
-			aug[i][j] = rand() %5 + 1;// = sys[i][j];
+		for (char j=0; j<5; j++){
+			if (i == 3) 
+				set[i][j] = 1.0;
+			else
+				set[i][j] = (rand() %100 + 1)/10.0;// = sys[i][j];
+			aug[i][j] = set[i][j];
+		}
 
-	// Printout augmented matrix
+	// Printout augmented matrix (for debugging)
+	std::cout << "Augmented matrix" << std::endl;
 	for (char i=0; i<4; i++){
 		for (char j=0; j<5; j++){
 			printf("%f\t",aug[i][j]);
 		}
-		std::cout << std::endl;
-	}
+		std::cout << std::endl; }
 	std::cout << std::endl << std::endl;
 
-	for (char k=0; k<4; k++){
+	//Build row-echelon matrix (upper triangular) starting from lower-left and then go up and to the right
+	for (char k=0; k<4; k++){ 
 		for (char i=3; i>k; i--){
-			double dPivL = aug[i][k];
-			double dPivU = aug[i-1][k];
+			double dPivL = aug[i][k]; //Store pivot because cell value will get changed
+			double dPivU = aug[i-1][k]; //This store is redundant but hey, it's just one double
 			for (char j=k; j<5; j++){
-				aug[i][j]   = aug[i][j]*dPivU;
-				aug[i-1][j] = aug[i-1][j]*dPivL;
-				aug[i][j]   = aug[i][j] - aug[i-1][j];
+				aug[i][j]   = aug[i][j]*dPivU; //Multiply entire row by Upper pivot
+				aug[i-1][j] = aug[i-1][j]*dPivL; //Multiply entire row by Lower pivot
+				aug[i][j]   = aug[i][j] - aug[i-1][j]; //Subtract line above from curent line, which guarantes element aug[i][k]=0
 			}
 		}
 	}
 
-	// Printout Row-echelon matrix
-	for (char i=0; i<4; i++){
-		for (char j=0; j<5; j++){
-			printf("%f\t",aug[i][j]);
-		}
-		std::cout << std::endl;
-	}
+	// Printout Row-echelon matrix (for debugging)
+	//for (char i=0; i<4; i++){
+	//	for (char j=0; j<5; j++){
+	//		printf("%f\t",aug[i][j]);
+	//	}
+	//	std::cout << std::endl;	}
 
 	//result
-	double result[4] = {0,0,0,0};
-	result[3] = aug[3][4]/aug[3][3]; // The last solution is trivial: alpha4 = d(4)/c(4,4) (see notes for details)
+	double result[5] = {0,0,0,0,-1};
+	result[3] = aug[3][4]/aug[3][3]; // The last solution is trivial: alpha4 = d(4)/c(4,4) (see notes for details), the rest are automatic
 	for (char i=2; i>=0; i--){
 		double sum = 0.0;
 		for (char j=i+1; j<4; j++)
@@ -248,13 +260,49 @@ bool solveLinSys(void)
 		result[i] = (aug[i][4]-sum)/aug[i][i];
 	}
 
-	// Print solution
-	for (char i=0; i<4; i++)
-		printf("%f\n",result[i]);
+	// Print solution of alphas (for debugging)
+	//std::cout << "Solution is:" << std::endl;
+	//for (char i=0; i<5; i++)
+	//	printf("\t%f\n",result[i]);
 
-	for (char i=0; i<4; i++)
+	// Verify visually the alphas are balanced (for debugging)
+	//std::cout << "Verify the alphas are balanced" << std::endl;
+	// Calculate the normalization factors for positive alphas and negative alphas (they should be equal in absolute value)
+	double dPos = 0.0;
+	double dNeg = 0.0;
+	for (char i=0; i<5; i++){
+		if (result[i] >=0.0)
+			dPos += result[i];
+		else
+			dNeg += result[i];}
+	//printf("Sum Positive alpha: %f\nSum Negative alpha: %f\n",sumplus,summinus);
+
+	//Calculate the centerpoint
+	sPoint pntCenter1; pntCenter1 = 0;
+	sPoint pntCenter2; pntCenter2 = 0;
+	for (char i=0; i<5; i++){
+		if (result[i]>=0.0){
+			pntCenter1.x += set[0][i]*result[i]/dPos;
+			pntCenter1.y += set[1][i]*result[i]/dPos;
+			pntCenter1.w += set[2][i]*result[i]/dPos;
+		}
+		else{
+			pntCenter2.x += set[0][i]*result[i]/dNeg;
+			pntCenter2.y += set[1][i]*result[i]/dNeg;
+			pntCenter2.w += set[2][i]*result[i]/dNeg;
+		}
+	}
+	printf("Center 1: [%f,%f,%f]\n",pntCenter1.x,pntCenter1.y,pntCenter1.w);
+	printf("Center 2: [%f,%f,%f]\n",pntCenter2.x,pntCenter2.y,pntCenter2.w);
+
+
+	// Clean-up the augmented matrix and the input set (input set is used only for debugging)
+	for (char i=0; i<4; i++){
 		delete [] aug[i];
+		delete [] set[i];
+	}
 	delete [] aug; aug = NULL;
+	delete [] set; set = NULL;
 
 	// Return from function
 	return true;
