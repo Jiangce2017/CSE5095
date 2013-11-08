@@ -1,0 +1,234 @@
+\documentclass{beamer}
+\usepackage{hyperref,wasysym,amssymb}
+\usepackage{listings}
+\usepackage{eqnarray,amsmath}
+
+\begin{document}
+
+\begin{frame}
+\frametitle{Computing Radon points}
+The Radon point forms affine combinations with the point set.
+\begin{itemize}[<+->]
+\item 	\begin{equation*}
+		\begin{array}{c c c c}
+			\sum\limits_{i=0}^{d+1}p_i\alpha_i = 0 & and & \sum\limits_{i=0}^{d+1}\alpha_i = 0, & \alpha_i \in \mathbb{R}
+		\end{array}
+		\end{equation*}
+\item	\begin{equation*}\left\lbrace 
+		\begin{array}{l}
+			\vspace{2pt}p_0^{(x)}\alpha_0 + p_1^{(x)}\alpha_1 + \ldots + p_{d+1}^{(x)}\alpha_{d+1} = 0\\
+			\vspace{2pt}p_0^{(y)}\alpha_0 + p_1^{(y)}\alpha_1 + \ldots + p_{d+1}^{(y)}\alpha_{d+1} = 0\\
+			\vspace{2pt}p_0^{(w)}\alpha_0 + p_1^{(w)}\alpha_1 + \ldots + p_{d+1}^{(w)}\alpha_{d+1} = 0\\
+			\vspace{2pt}\alpha_0 + \alpha_1 + \ldots + \alpha_{d+1} = 0
+		\end{array}\right. 
+		\end{equation*}
+\item In $\mathbb{E}^d$, $(d+1)$ equations in $(d+2)$ unknowns \XBox
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Computing Radon points}
+\begin{equation*}
+\boxed{\alpha_{(d+1)} = -1}
+\end{equation*}
+\newline
+\begin{equation*}\left\lbrace 
+\begin{array}{l}
+	\vspace{2pt}p_0^{(x)}\alpha_0 + \ldots + p_d^{(x)}\alpha_d = p_{(d+1)}^{(x)}\\
+	\vspace{2pt}p_0^{(y)}\alpha_0 + \ldots + p_d^{(y)}\alpha_d = p_{(d+1)}^{(y)}\\
+	\vspace{2pt}p_0^{(w)}\alpha_0 + \ldots + p_d^{(w)}\alpha_d = p_{(d+1)}^{(w)}\\
+	\vspace{2pt}\alpha_1 + \ldots + \alpha_d = 1
+\end{array}\right. 
+\end{equation*}
+\newline
+In $\mathbb{E}^3$, four equations in four unknowns \CheckedBox
+\end{frame}
+
+\begin{frame}
+\frametitle{Solving systems of linear equations}
+\begin{itemize}[<+->]
+\item	\begin{equation*}
+		\left[ \begin{array}{c c c c}
+			\vspace{2pt}p_0^{(x)}&p_1^{(x)}&\cdots&p_d^{(x)}\\
+			\vspace{2pt}p_0^{(y)}&p_1^{(y)}&\cdots&p_d^{(y)}\\
+			\vspace{2pt}p_0^{(w)}&p_1^{(w)}&\cdots&p_d^{(w)}\\
+			\vspace{2pt}\cdots&\cdots&\ddots&\cdots\\
+			\vspace{2pt}1&1&\cdots&1
+		\end{array}\right]
+		\left[ \begin{array}{c}
+			\vspace{2pt}\alpha_0\\
+			\vspace{2pt}\alpha_1\\
+			\vspace{2pt}\alpha_2\\
+			\vspace{2pt}\cdots\\
+			\vspace{2pt}\alpha_d
+		\end{array}\right]
+		=
+		\left[ \begin{array}{c}
+			\vspace{2pt}p_{{d+1}}^{(x)}\\
+			\vspace{2pt}p_{{d+1}}^{(y)}\\
+			\vspace{2pt}p_{{d+1}}^{(w)}\\
+			\vspace{2pt}\cdots\\
+			\vspace{2pt}1
+		\end{array}\right]	
+		\end{equation*}
+		In symbolic form
+		\begin{equation*}
+		\mathbf{P}\underline{\alpha}=\underline{b}
+		\end{equation*}
+\item 	Build the \emph{augmented} matrix
+		\begin{equation*}
+		\mathbf{A}=\left[ \mathbf{P}|\underline{b}\right] 
+		\end{equation*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Augmented matrix}
+\begin{itemize}[<+->]
+\item	\begin{equation*}
+		\mathbf{A}=
+		\left[ \begin{array}{c c c c | c}
+			\vspace{1pt}p_0^{(x)}&p_1^{(x)}&\cdots&p_d^{(x)}&p_{d+1}^{(x)}\\
+			\vspace{1pt}p_0^{(y)}&p_1^{(y)}&\cdots&p_d^{(y)}&p_{d+1}^{(y)}\\
+			\vspace{1pt}p_0^{(w)}&p_1^{(w)}&\cdots&p_d^{(w)}&p_{d+1}^{(w)}\\
+			\vspace{1pt}\cdots&\cdots&\ddots&\cdots&\cdots\\
+			\vspace{1pt}1&1&\cdots&1&1
+		\end{array}\right]
+		\end{equation*}
+\item	Convert to an \emph{upper triangular} matrix.
+		\begin{equation*}
+		\mathbf{C}=
+		\left[ \begin{array}{c c c c | c}
+			\vspace{1pt} c_{00}&c_{01}&\cdots&c_{0d}&d_0\\
+			\vspace{1pt} 0&c_{11}&\cdots&c_{1d}&d_1\\
+			\vspace{1pt} 0&0&\cdots&c_{2d}&d_2\\
+			\vspace{1pt}\cdots&\cdots&\ddots&\cdots&\cdots\\
+			\vspace{1pt}0&0&\cdots&c_{dd}&d_d
+		\end{array}\right]
+		\end{equation*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Augmented matrix - simple row operations}
+\begin{itemize}[<+->]
+\item	Start with bottom line and first column
+		\begin{equation*}
+		\mathbf{C}=
+		\left[ \begin{array}{c c c c | c}
+			\vspace{1pt} \cdots&\cdots&\ddots&\cdots&\cdots\\
+			\vspace{1pt} c_{(d-1)0}&c_{(d-1)1}&\cdots&c_{(d-1)d}&d_{d-1}\\
+			\vspace{1pt} c_{d0}&c_{d1}&\cdots&c_{dd}&d_d\\
+		\end{array}\right]
+		\begin{array}{c}
+			\vspace{1pt} \cdots\\
+			\vspace{1pt} L_{d-1}\\
+			\vspace{1pt} L_d\\
+		\end{array}
+		\end{equation*}
+\item	$L^{'}_{d-1} = c_{d0}L_{d-1}$\\
+		$L^{'}_{d} = c_{(d-1)0}L_d$\\
+		$L_{d-1} = L^{'}_{d-1}$\\
+		$L_d = L^{'}_{d} - L^{'}_{d-1}$
+\item	Go up one line and repeat until you reach the main diagonal
+\item	Then move to the next column and do the same
+\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\algI{
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily,keywordstyle=\color{red}]
+//Build upper triangular matrix 
+for (char k=0; k<4; k++){ 
+ for (char i=3; i>k; i--){
+  //Store pivot
+  double dPivL = aug[i][k]; 
+  double dPivU = aug[i-1][k]; 
+  for (char j=k; j<5; j++){
+   //Multiply entire row by Upper pivot
+   aug[i][j] = aug[i][j]*dPivU;
+   //Multiply entire row by Lower pivot
+   aug[i-1][j] = aug[i-1][j]*dPivL;
+   //Subtract line above from curent line
+   aug[i][j] = aug[i][j] - aug[i-1][j]; 
+  }
+ }
+}
+\end{lstlisting}
+}
+
+\begin{frame}
+\frametitle{Algorithm}
+\algI
+\end{frame}
+
+\begin{frame}
+\frametitle{Solve the system}
+\begin{itemize}[<+->]
+\item	Get back to original system
+		\begin{equation*}
+		\mathbf{C}=
+		\left[ \begin{array}{c c c c}
+			c_{00}&c_{01}&\cdots&c_{0d}\\
+			0&c_{11}&\cdots&c_{1d}\\
+			0&0&\cdots&c_{2d}\\
+			\cdots&\cdots&\ddots&\cdots\\
+			0&0&\cdots&c_{dd}
+		\end{array}\right]
+		\left[ \begin{array}{c}
+			\alpha_0\\
+			\alpha_1\\
+			\alpha_2\\
+			\cdots\\
+			\alpha_d
+		\end{array}\right]
+		=
+		\left[ \begin{array}{c}
+			d_0\\
+			d_1\\
+			d_2\\
+			\cdots\\
+			d_d
+		\end{array}\right]
+		\end{equation*}
+\item	Calculate $\alpha_d = \dfrac{d_d}{c_{dd}}$
+\item	Calculate the rest using $\alpha_i=\dfrac{1}{c_{ii}}\left( d_i - \sum\limits_{j=i+1}^{d}c_{ij}\alpha_j\right)$,
+		where $i$ ranges from $d-1$ down to $0$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Solver algorithm}
+\end{frame}
+
+\begin{frame}
+\frametitle{Compute the Radon point}
+\begin{equation*}
+\begin{array}{c}
+\vspace{10pt} \mathcal{S}_{+}:=\{i:\alpha_i\geqslant 0\} \text{ and } \mathcal{S}_{-}:=\{j:\alpha_j < 0\}\\
+\vspace{10pt} c = \sum\limits_{i\in\mathcal{S}_{+}} \alpha_i = - \sum\limits_{j\in\mathcal{S}_{-}} \alpha_j\\
+\vspace{10pt} O_P = \sum\limits_{i\in\mathcal{S}_{+}}\dfrac{p_i\alpha_i}{c} = - \sum\limits_{j\in\mathcal{S}_{-}}\dfrac{p_j\alpha_j}{c}
+\end{array}
+\end{equation*}
+\end{frame}
+
+\begin{frame}
+ 
+   \begin{block}{This is a Block}
+      This is important information
+   \end{block}
+ 
+   \begin{alertblock}{This is an Alert block}
+   This is an important alert
+   \end{alertblock}
+ 
+   \begin{exampleblock}{This is an Example block}
+   This is an example 
+   \end{exampleblock}
+ 
+\end{frame}
+
+
+
+
+
+\end{document}
