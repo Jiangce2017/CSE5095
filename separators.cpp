@@ -114,45 +114,163 @@ bool buildBalancedTree(sPoint const* pntP, unsigned n)
 };
 
 
-// Function cross(): returns the cross product of two vectors a and b
-sPoint cross(sPoint const* a, sPoint const* b)
-{
+// Function cross(a,b): returns the cross product of two vectors a and b
+// Usage: 
+//		sPoint pntOut = cross(&pntIn[0],&pntIn[1]);
+sPoint cross(sPoint const* a, sPoint const* b){
 	sPoint result;
 	result.x = (a->y * b->w) - (a->w * b->y);
 	result.y = -1*(a->x * b->w) + (a->w * b->x);
 	result.w = (a->x * b->y) - (a->y * b->x);
 	return result;
-}
+};
 
-// Function dot(): returns the dot product of two vectors a and b
-double dot(sPoint const* a, sPoint const* b)
-{
+// Function dot(a,b): returns the dot product of two vectors a and b
+// Usage: 
+//		double d = cross(&pntIn[0],&pntIn[1]);
+double dot(sPoint const* a, sPoint const* b){
 	return (a->x * b->x) + (a->y * b->y) + (a->w * b->w);
-}
+};
 
-// Function signedVolume(): returns the sign of the mix product A{dot}(B{cross}C)
-int signedVolume(sPoint const* a, sPoint const* b, sPoint const* c)
-{
-	int result;
-	(dot(a,&cross(b,c)) < 0.0f) ? result = -1 : result = 1;
+// Function norm(a): returns the norm of a vector
+double norm(sPoint const* a){
+	return sqrt(pow(a->x,2)+pow(a->y,2)+pow(a->w,2));
+};
+
+// Function unitNormal(a,b,c): returns the unit normal vector to the plane determine by 3 points a,b,c
+// Usage:
+//		sPoint nor = unitNormal(&pntIn[0],&pntIn[1],&pntIn[2]);
+sPoint unitNormal(sPoint const* a, sPoint const* b, sPoint const* c){
+	sPoint B = *b-*a;
+	sPoint C = *c-*a;
+	sPoint Den = cross(&B,&C);
+	double nor = norm(&Den);
+	sPoint result;
+	(nor == 0.0f) ? result = Den : result = Den/nor;
 	return result;
 }
+
+// Function dist(n,x0,xi): returns the distance between a point x0 and a plane. xi is a point on that plane and n is the unit normal to that plane
+double dist(sPoint const* n, sPoint const* x0, sPoint const* xi){
+	sPoint diff = *x0 - *xi;
+	return dot(n,&diff);
+};
+
+// Function swap(a,b): swaps two points (a,b)
+bool swap(sPoint &a, sPoint &b){
+	sPoint temp = a;
+	a = b;
+	b = temp;
+	return true;
+};
+
+// Function orientPyramid(a,b,c,d): swap points a,b,c,d such that towards the inside, the cross product is always positive and towards outside is always negative
+// Usage:
+//		orientPyramid(&test);
+//		for (unsigned i=0; i<4; i++)
+//		{
+//			printf("Point %d: [%f,%f,%f]\n",i,test[i].x,test[i].y,test[i].w);
+//		}
+bool orientPyramid(sPoint **pnt){
+	// This is just a bunch of B.S.
+	if (dist(&unitNormal(&(*pnt)[1],&(*pnt)[2],&(*pnt)[3]),&(*pnt)[0],&(*pnt)[1]) < 0) swap((*pnt)[2],(*pnt)[3]);
+	if (dist(&unitNormal(&(*pnt)[0],&(*pnt)[2],&(*pnt)[3]),&(*pnt)[1],&(*pnt)[0]) < 0) swap((*pnt)[2],(*pnt)[3]);
+	if (dist(&unitNormal(&(*pnt)[0],&(*pnt)[1],&(*pnt)[3]),&(*pnt)[2],&(*pnt)[0]) < 0) swap((*pnt)[1],(*pnt)[3]);
+	if (dist(&unitNormal(&(*pnt)[0],&(*pnt)[1],&(*pnt)[2]),&(*pnt)[3],&(*pnt)[0]) < 0) swap((*pnt)[1],(*pnt)[2]);
+	return true;
+};
+
+// Function signedVolume(): returns the sign of the mix product A{dot}(B{cross}C)
+// Usage:
+//		double d = signedVolume(&pntIn[0],&pntIn[1],&pntIn[2]);
+//		printf("Signed volume: [%f]\n",d);
+double signedVolume(sPoint const* a, sPoint const* b, sPoint const* c)
+{
+	//Variant I: return +/-1 (only care about the sign of the signed volume)
+	//double result;
+	//(dot(a,&cross(b,c)) < 0.0f) ? result = -1 : result = 1;
+	//return result;
+
+	//Variant II: return the actual value of the signed volume
+	return dot(a,&cross(b,c));
+}
+
+// Function solveLinSys(): solves by Gauss-ellimination a linear system of equations
+bool solveLinSys(void)
+{
+	//double sys[4][5] = {{1,2,-3,4,5},{1,-5,6,4,-2},{-3,5,-1,4,6},{1,1,1,1,1}};
+	// Result should be: {0.028133;0.585678;-0.322251;0.708440}
+
+	double **aug = new double*[4];
+	for (char i=0; i<4; i++)
+		aug[i] = new double[5];
+
+	for (char i=0; i<4; i++)
+		for (char j=0; j<5; j++)
+			aug[i][j] = rand() %5 + 1;// = sys[i][j];
+
+	// Printout augmented matrix
+	for (char i=0; i<4; i++){
+		for (char j=0; j<5; j++){
+			printf("%f\t",aug[i][j]);
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl << std::endl;
+
+	for (char k=0; k<4; k++){
+		for (char i=3; i>k; i--){
+			double dPivL = aug[i][k];
+			double dPivU = aug[i-1][k];
+			for (char j=k; j<5; j++){
+				aug[i][j]   = aug[i][j]*dPivU;
+				aug[i-1][j] = aug[i-1][j]*dPivL;
+				aug[i][j]   = aug[i][j] - aug[i-1][j];
+			}
+		}
+	}
+
+	// Printout Row-echelon matrix
+	for (char i=0; i<4; i++){
+		for (char j=0; j<5; j++){
+			printf("%f\t",aug[i][j]);
+		}
+		std::cout << std::endl;
+	}
+
+	//result
+	double result[4] = {0,0,0,0};
+	result[3] = aug[3][4]/aug[3][3]; // The last solution is trivial: alpha4 = d(4)/c(4,4) (see notes for details)
+	for (char i=2; i>=0; i--){
+		double sum = 0.0;
+		for (char j=i+1; j<4; j++)
+			sum += aug[i][j]*result[j];
+		result[i] = (aug[i][4]-sum)/aug[i][i];
+	}
+
+	// Print solution
+	for (char i=0; i<4; i++)
+		printf("%f\n",result[i]);
+
+	for (char i=0; i<4; i++)
+		delete [] aug[i];
+	delete [] aug; aug = NULL;
+
+	// Return from function
+	return true;
+};
 
 // Function getCenter5()
 // Input: 5 points in R^3 (in general position)
 // Output: centerpoint (a Radon point)
-bool getCenter5(sPoint const* pntIn, sPoint &pntOut)
+bool getCenter5(sPoint *pntIn, sPoint &pntOut)
 {
 	// There's no error catch if number of points passed is different than 5 so it better be the right number
 	// There can be two cases (assuming general position):
 	//		1. One of the points is inside the triangular pyramid formed by the other 4 - then return the inside point
 	//		2. The 5 points describe a hexahedron (triangular dipyramid) - then the result is any of the points
 	//pntOut = pntIn[0]; //Test output
-	pntOut = cross(&pntIn[0],&pntIn[1]);
-	int d = signedVolume(&pntIn[0],&pntIn[1],&pntIn[2]);
-	std::cout << d << std::endl;
-	sPoint test = pntIn[0]-pntIn[1];
-	printf("Difference: [%f,%f,%f]\n",test.x,test.y,test.w);
+	
 	return true;
 }
 
@@ -194,6 +312,7 @@ bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
 	//pntOut.w = 0.2*(ppntCenter[0].w+ppntCenter[1].w+ppntCenter[2].w+ppntCenter[3].w+ppntCenter[4].w);
 
 	getCenter5(ppntCenter,pntOut);
+	solveLinSys();
 
 	//Deallocate current 5 center points
 	delete [] ppntCenter; ppntCenter = NULL;
@@ -214,7 +333,7 @@ int main(int argc, char **argv)
 	// Calculate their CenterPoint
 	sPoint pntCenter;
 	getCenterPoint(points,N,pntCenter);
-	printf("CenterPoint = {%f,%f,%f}\n",pntCenter.x,pntCenter.y,pntCenter.w);
+	//printf("CenterPoint = {%f,%f,%f}\n",pntCenter.x,pntCenter.y,pntCenter.w);
 	
 	int n; 	std::cin >> std::hex >> n;
 	delete [] points; points = NULL; //Dont forget to deallocate
