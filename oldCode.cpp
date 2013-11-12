@@ -1,7 +1,5 @@
 // Application includes
 #include "utils.h"
-#include "Tree.h"
-#include <cmath>
 
 // Utilities and System Includes
 #include <iostream>
@@ -129,6 +127,15 @@ bool IteratedTverberg(sPoint const* pntS, int n, sPoint &pntO)
 	//ToDO: There's no need to randomly select points from the initial set because the input is randomized.
 	//		If the input is not randomized, create a function that shuffles the indexes of the array of points and problem solved - we're back to random points.
 
+	return true;
+};
+
+// Function buildBalancedTree()
+// Input : a set of points in P{subset}R^d
+// Output : a balanced (d+2)-way tree T, of L leaves (for some integer L)
+bool buildBalancedTree(sPoint const* pntP, unsigned n)
+{
+	// As of 29Oct'13 the code works with points in R^3; thus d=3 => T is a 5-way tree
 	return true;
 };
 

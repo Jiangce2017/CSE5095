@@ -1,5 +1,9 @@
 
 
+#pragma once
+#ifndef UTILS_H
+#define UTILS_H
+
 // Create a structure for point coordinates (we only use here Cartesian coordinates). W is the (d+1) coordinate and for now d=2
 typedef struct _point{
 	double x,y,w;
@@ -44,3 +48,4 @@ typedef struct _point{
 } sPoint;
 
 
+#endif // UTILS_H
