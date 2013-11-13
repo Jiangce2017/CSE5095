@@ -9,8 +9,12 @@
 #include <glew.h>// Include GLEW. Always include it before gl.h and glfw.h (magic, don't ask)
 //#include <gl\GL.h>
 
-//#define GLFW_DLL // Depending on how you built/installed GLFW, you may want to change this
 #include <glfw.h>// Include GLFW
 
 #include <glm.hpp>// Include GLM
 using namespace glm;
+
+#include <shader.hpp>// Include a shader
+
+int doInitWnd(void);
+int runMainLoop(void);
