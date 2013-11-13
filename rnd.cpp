@@ -16,14 +16,14 @@ bool generatePoints(sPoint **pOut, unsigned &iCount)
 	//iCount = (unsigned)(rand() % 1000 + 1); //Generate random number of points (at most 1000)
 
 	char d = 3; //Dimensionality of points (in the projection to the paraboloid)
-	char k = 3; //Multiplier for number of points
+	char k = 6; //Multiplier for number of points
 	iCount = (unsigned) pow((double)(d+2),k); //Or generate a fixed number of points equal to (d+2)^k
 
 	//Limits of the d-space
 	int ixL = -100;
-	int ixU = 100;
+	int ixU =  100;
 	int iyL = -100;
-	int iyU = 100;
+	int iyU =  100;
 	int irangeX = ixU - ixL;
 	int irangeY = iyU - iyL;
 
@@ -37,6 +37,10 @@ bool generatePoints(sPoint **pOut, unsigned &iCount)
 		//pntCurrent.y = (rand() % irangeY + 1) + iyL;
 
 		//2nd strategy of generating random points
+		//pntCurrent.x = ((rand() % irangeX + 1) + ixL)/ixU;
+		//pntCurrent.y = ((rand() % irangeY + 1) + iyL)/iyU;
+		
+		//3rd strategy of generating random points
 		double rand1 = (rand() % irangeX + 1) + ixL;
 		double rand2 = (rand() % irangeX + 1) + ixL;
 		(rand2 != 0.0f) ? pntCurrent.x = rand1/rand2 : pntCurrent.x = rand1/3.1415; //x-coord as a ratio of two random numbers
@@ -49,8 +53,8 @@ bool generatePoints(sPoint **pOut, unsigned &iCount)
 		(*pOut)[i] = pntCurrent;
 	}
 	//Output the points for debugging
-	for (unsigned i=0; i<iCount; i++)
-		printf("P[%d] = {%f\t%f\t%f}\n",i,(*pOut)[i].x,(*pOut)[i].y,(*pOut)[i].w);
+	//for (unsigned i=0; i<iCount; i++)
+	//	printf("P[%d] = {%f\t%f\t%f}\n",i,(*pOut)[i].x,(*pOut)[i].y,(*pOut)[i].w);
 
 	// ToDo:
 	// Create error catch for various stuff that might happen
