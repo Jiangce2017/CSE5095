@@ -26,10 +26,11 @@ glm::mat4 getProjectionMatrix(){
 	return ProjectionMatrix;
 }
 
-glm::vec3 position = glm::vec3( 0, 0, 5 ); // Initial position : on +Z
-float horizontalAngle = 3.14f; // Initial horizontal angle : toward -Z
-float verticalAngle = 0.0f; // Initial vertical angle : none
-float initialFoV = 45.0f; // Initial Field of View
+glm::vec3 position = glm::vec3( 0.138f, 4.021f, 1.600f ); // Initial position : on +Z
+//float grd2rad = 3.14f/180;
+float horizontalAngle = 6.29f; // Initial horizontal angle : toward -Z
+float verticalAngle = -1.76f; // Initial vertical angle : none
+float initialFoV = 75.0f; // Initial Field of View
 float keySpeed = 3.0f; // 3 units/second
 float mouseSpeed = 0.005f;
 
@@ -45,11 +46,21 @@ void computeMatricesFromInputs(){
 
 	// Get mouse position
 	int xpos, ypos;
-	glfwGetMousePos(&xpos, &ypos);
+	if (glfwGetMouseButton( GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
+		glfwGetMousePos(&xpos, &ypos);
+		// Reset mouse position for next frame
+		glfwSetMousePos(1024/2, 768/2);
+	}
+	else{
+		xpos = 1024/2;
+		ypos = 768/2;
+	}
 
-	// Reset mouse position for next frame
-	glfwSetMousePos(1024/2, 768/2);
-
+	// Move in the scene like in COD - Black Ops. (comment-out the above IF\ELSE)
+	//glfwGetMousePos(&xpos, &ypos);
+	//// Reset mouse position for next frame
+	//glfwSetMousePos(1024/2, 768/2);
+	
 	// Compute new orientation
 	horizontalAngle += mouseSpeed * float(1024/2 - xpos );
 	verticalAngle   += mouseSpeed * float( 768/2 - ypos );
@@ -72,25 +83,25 @@ void computeMatricesFromInputs(){
 	glm::vec3 up = glm::cross( right, direction );
 
 	// Move forward
-	if (glfwGetKey( GLFW_KEY_UP ) == GLFW_PRESS){
+	if (glfwGetKey( 'W' ) == GLFW_PRESS){ //GLFW_KEY_UP
 		position += direction * deltaTime * keySpeed;
 	}
 	// Move backward
-	if (glfwGetKey( GLFW_KEY_DOWN ) == GLFW_PRESS){
+	if (glfwGetKey( 'S' ) == GLFW_PRESS){ //GLFW_KEY_DOWN
 		position -= direction * deltaTime * keySpeed;
 	}
 	// Strafe right
-	if (glfwGetKey( GLFW_KEY_RIGHT ) == GLFW_PRESS){
+	if (glfwGetKey( 'D' ) == GLFW_PRESS){ //GLFW_KEY_RIGHT
 		position += right * deltaTime * keySpeed;
 	}
 	// Strafe left
-	if (glfwGetKey( GLFW_KEY_LEFT ) == GLFW_PRESS){
+	if (glfwGetKey( 'A' ) == GLFW_PRESS){ //GLFW_KEY_LEFT
 		position -= right * deltaTime * keySpeed;
 	}
 
 	float FoV = initialFoV - 5 * glfwGetMouseWheel();
 
-	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	// Projection matrix : Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 	ProjectionMatrix = glm::perspective(FoV, 4.0f / 3.0f, 0.1f, 100.0f);
 	// Camera matrix
 	ViewMatrix       = glm::lookAt(
@@ -101,4 +112,8 @@ void computeMatricesFromInputs(){
 
 	// For the next frame, the "last time" will be "now"
 	lastTime = currentTime;
+	//printf("horizontalAngle = %f\n",horizontalAngle);
+	//printf("verticalAngle = %f\n",verticalAngle);
+	//printf("FoV = %f\n",FoV);
+	//printf("position[%f\t%f\t%f]\n",position.x,position.y,position.z);
 }
