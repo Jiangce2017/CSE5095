@@ -184,3 +184,32 @@ bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
 	delete [] ppntCenter; ppntCenter = NULL;
 	return true;
 }
+
+
+// Function getPartition(...). Given the R^3 center point of a point set in R^2 lifted onto a paraboloid, 
+// calculates the partition of the set using the simplified Miller-Thurston Algorithm.
+// Output is the radius of a circle (the partition) and its center in R^2 (the w-coordinate will be set to 0)
+bool getPartition(sPoint const* sCP, double* dRad, sPoint* sCenter)
+{
+	// This is needed in the calculation of the radius
+	double dNormSq = pow(sCP->x,2) + pow(sCP->y,2);
+	// Randomly generate a vector in R^3 and then normalize it
+	sPoint sVec;
+	sVec.x = (rand() % 2000 + 1) - 1000;
+	sVec.y = (rand() % 2000 + 1) - 1000;
+	// Just make sure the w-component is not zero
+	do
+	{
+		sVec.w = (rand() % 2000 + 1) - 1000;
+	}
+	while(sVec.w == 0.0f);
+	double dInvNormVec = 1/sqrt( pow(sVec.x,2) + pow(sVec.y,2) + pow(sVec.w,2) );
+	sVec = sVec * dInvNormVec;
+	// Calculate the radius of the partition (circle)
+	*dRad = sqrt(sCP->w - dNormSq)/abs(sVec.w);
+	// Calculate the center of the circle
+	*sCenter = *sCP - sVec * *dRad;
+	(*sCenter).w = 0.0f;
+
+	return true;
+}

@@ -10,3 +10,4 @@
 
 bool solveLinSys(sPoint*, sPoint&);
 bool getCenterPoint(sPoint const*, int, sPoint&);
+bool getPartition(sPoint const*, double*, sPoint*);

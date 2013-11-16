@@ -2,6 +2,7 @@
 //Application includes
 #include "utils.h"
 #include "rnd.h"
+#include "centerpoint.h"
 
 // Include standard headers
 //#include <stdio.h>
