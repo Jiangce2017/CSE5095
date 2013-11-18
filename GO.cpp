@@ -12,37 +12,39 @@ static GLuint ProgramID, //ID of our shader
 			  MatrixID, //ID for view matrix transformations3
 			  VertexShaderId,
 			  FragmentShaderId,
-			  VaoId,
-			  VboId,
-			  ColorBufferId;
+			  VertexArrayID,
+			  VertexBufferID,
+			  ColorBufferID;
 
-// GLSL vertex shader as described in http://openglbook.com/the-book/chapter-2-vertices-and-shapes/
+// GLSL vertex shader
 const GLchar* VertexShader =
 {
-    "#version 400\n"\
+    "#version 330 core\n"\
  
-    "layout(location=0) in vec4 in_Position;\n"\
-    "layout(location=1) in vec4 in_Color;\n"\
-    "out vec4 ex_Color;\n"\
+    "layout(location = 0) in vec3 vertexPosition_modelspace;\n"\
+    "layout(location = 1) in vec3 vertexColor;\n"\
+    "out vec3 fragmentColor;\n"\
+
+	"uniform mat4 MVP;\n"\
  
     "void main(void)\n"\
     "{\n"\
-    "   gl_Position = in_Position;\n"\
-    "   ex_Color = in_Color;\n"\
+    "   gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n"\
+    "   fragmentColor = vertexColor;\n"\
     "}\n"
 };
 
-// GLSL fragment shader as described in http://openglbook.com/the-book/chapter-2-vertices-and-shapes/
+// GLSL fragment shader
 const GLchar* FragmentShader =
 {
-    "#version 400\n"\
+    "#version 330 core\n"\
  
-    "in vec4 ex_Color;\n"\
-    "out vec4 out_Color;\n"\
+    "in vec3 fragmentColor;\n"\
+    "out vec3 color;\n"\
  
     "void main(void)\n"\
     "{\n"\
-    "   out_Color = ex_Color;\n"\
+    "   color = fragmentColor;\n"\
     "}\n"
 };
 
@@ -100,69 +102,38 @@ void InitWindow(int argc, char* argv[])
 	glfwSetWindowTitle( "Geometric Separators" );
 }
 
-// Window resize
-void GLFWCALL WindowResize( int width, int height )
-{
-	CurrentWidth = width;
-	CurrentHeight = height;
-}
-
-void RenderFunction(void)
-{
-	int running = GL_TRUE;
-
-	CreateShaders();
-	CreateVBO();
-
-	// Main loop
-	while( running )
-	{
-		// OpenGL rendering goes here...
-		glClear( GL_COLOR_BUFFER_BIT );
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		// Swap front and back rendering buffers
-		glfwSwapBuffers();
-		// Check if ESC key was pressed or window was closed
-		running = !glfwGetKey( GLFW_KEY_ESC ) && glfwGetWindowParam( GLFW_OPENED );
-	}
-
-	// Close window and terminate GLFW
-	Cleanup();
-	glfwTerminate();
-	// Exit program
-	exit( EXIT_SUCCESS );
-}
 
 void CreateVBO(void)
 {
-    GLfloat Vertices[] = {
-        -0.8f, -0.8f, 0.0f, 1.0f,
-         0.0f,  0.8f, 0.0f, 1.0f,
-         0.8f, -0.8f, 0.0f, 1.0f
-    };
- 
-    GLfloat Colors[] = {
-        1.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f, 1.0f
-    };
- 
-    GLenum ErrorCheckValue = glGetError();
-     
-    glGenVertexArrays(1, &VaoId);
-    glBindVertexArray(VaoId);
- 
-    glGenBuffers(1, &VboId);
-    glBindBuffer(GL_ARRAY_BUFFER, VboId);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-     
-    glGenBuffers(1, &ColorBufferId);
-    glBindBuffer(GL_ARRAY_BUFFER, ColorBufferId);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Colors), Colors, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(1);
+	GLfloat Vertices[] = {
+		-0.8f, -0.8f, 0.0f, 1.0f,
+		 0.0f,  0.8f, 0.0f, 1.0f,
+		 0.8f, -0.8f, 0.0f, 1.0f
+	};
+
+	GLfloat Colors[] = {
+		1.0f, 0.0f, 0.0f, 1.0f,
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f
+	};
+
+	GLenum ErrorCheckValue = glGetError();
+	
+	glGenVertexArrays(1, &VertexArrayID);
+	glBindVertexArray(VertexArrayID);
+
+	glGenBuffers(1, &VertexBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, VertexBufferID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+	
+	glGenBuffers(1, &ColorBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, ColorBufferID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Colors), Colors, GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
  
     ErrorCheckValue = glGetError();
     if (ErrorCheckValue != GL_NO_ERROR)
@@ -173,24 +144,26 @@ void CreateVBO(void)
             gluErrorString(ErrorCheckValue)
         );
  
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
  }
 
 void DestroyVBO(void)
 {
-    GLenum ErrorCheckValue = glGetError();
+    GLenum ErrorCheckValue; 
+	
+	ErrorCheckValue = glGetError();
  
+	glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(0);
-     
+         
     glBindBuffer(GL_ARRAY_BUFFER, 0);
  
-    glDeleteBuffers(1, &ColorBufferId);
-    glDeleteBuffers(1, &VboId);
+    glDeleteBuffers(1, &ColorBufferID);
+    glDeleteBuffers(1, &VertexBufferID);
  
     glBindVertexArray(0);
-    glDeleteVertexArrays(1, &VaoId);
+    glDeleteVertexArrays(1, &VertexArrayID);
  
     ErrorCheckValue = glGetError();
     if (ErrorCheckValue != GL_NO_ERROR)
@@ -201,27 +174,33 @@ void DestroyVBO(void)
             gluErrorString(ErrorCheckValue)
         );
  
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 
 void CreateShaders(void)
 {
     GLenum ErrorCheckValue = glGetError();
-     
+
+    // Create and compile the GLSL vertex shader 
     VertexShaderId = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(VertexShaderId, 1, &VertexShader, NULL);
     glCompileShader(VertexShaderId);
- 
+
+	 // Create and compile the GLSL fragment shader 
     FragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(FragmentShaderId, 1, &FragmentShader, NULL);
     glCompileShader(FragmentShaderId);
- 
+
+	// Create the program and attach the shaders to it
     ProgramID = glCreateProgram();
         glAttachShader(ProgramID, VertexShaderId);
         glAttachShader(ProgramID, FragmentShaderId);
     glLinkProgram(ProgramID);
     glUseProgram(ProgramID);
+
+	// Get a handle for our "MVP" uniform
+	MatrixID = glGetUniformLocation(ProgramID, "MVP");
  
     ErrorCheckValue = glGetError();
     if (ErrorCheckValue != GL_NO_ERROR)
@@ -232,7 +211,7 @@ void CreateShaders(void)
             gluErrorString(ErrorCheckValue)
         );
  
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -240,7 +219,7 @@ void DestroyShaders(void)
 {
     GLenum ErrorCheckValue = glGetError();
  
-    glUseProgram(0);
+    glUseProgram(0); //Invoke current program
  
     glDetachShader(ProgramID, VertexShaderId);
     glDetachShader(ProgramID, FragmentShaderId);
@@ -259,19 +238,19 @@ void DestroyShaders(void)
             gluErrorString(ErrorCheckValue)
         );
  
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 
 void Cleanup(void)
 {
+	DestroyVBO();
     DestroyShaders();
-    DestroyVBO();
+
 }
 
 bool sPoint2Array(sPoint const* sPtIn, unsigned n, GLfloat **gfOut)
 {
-	//*gfOut = new GLfloat[4*n]; //Only the points on the paraboloid or the ones in the plane
 	*gfOut = new GLfloat[8*n]; //Both the projected and the E^2 points
 	for (unsigned i=0; i<n; i++)
 	{
@@ -289,63 +268,56 @@ bool sPoint2Array(sPoint const* sPtIn, unsigned n, GLfloat **gfOut)
 
 void DrawCircle(float cx, float cy, float r, int num_segments, GLfloat **gfOut) 
 { 
-	float theta = 2 * 3.1415926 / float(num_segments); 
+	float theta = 2 * 3.1415926 / float(num_segments-1); 
 	float tangetial_factor = tanf(theta);//calculate the tangential factor 
-
 	float radial_factor = cosf(theta);//calculate the radial factor 
-	
 	float x = r; //we start at angle = 0 
-
 	float y = 0; 
+
 	*gfOut = new GLfloat[num_segments*4];
     
-	for(int ii = 0; ii < num_segments; ii++) 
+	for(int ii = 0; ii < num_segments-1; ii++) 
 	{ 
-		//glVertex2f(x + cx, y + cy);//output vertex 
 		(*gfOut)[ii*4+0] = x + cx;
 		(*gfOut)[ii*4+1] = y + cy;
 		(*gfOut)[ii*4+2] = 0.0f;
 		(*gfOut)[ii*4+3] = 1.0f;
         
-		//calculate the tangential vector 
-		//remember, the radial vector is (x, y) 
+		//calculate the tangential vector {remember, the radial vector is (x, y)}
 		//to get the tangential vector we flip those coordinates and negate one of them 
-
 		float tx = -y; 
 		float ty = x; 
         
 		//add the tangential vector 
-
 		x += tx * tangetial_factor; 
 		y += ty * tangetial_factor; 
         
 		//correct using the radial factor 
-
 		x *= radial_factor; 
 		y *= radial_factor; 
 	} 
+	//Last point is identical to the first (to have a closed loop)
+	(*gfOut)[(num_segments-1)*4+0] = (*gfOut)[0];
+	(*gfOut)[(num_segments-1)*4+1] = (*gfOut)[1];
+	(*gfOut)[(num_segments-1)*4+2] = (*gfOut)[2];
+	(*gfOut)[(num_segments-1)*4+3] = (*gfOut)[3];
 }
 
 
-int runRenderLoop()
+void runRenderLoop()
 {
 	glewExperimental = GL_TRUE;
 	glewInit(); // Don't ask. GLEW_3.3 is still on the phase "do this, it's magic"
 
-	GLuint VertexArrayID;
+	//CreateVBO();
+
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-	glfwSetMousePos(1024/2, 768/2); // Start by butting the cursor in the middle of the window (be carefull if you change the size of the window at runtime)
-
 	// Create and compile our GLSL program from the shaders
-	//programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" ); //For simple display points
-	//programID = LoadShaders( "SimpleTransform.vertexshader", "SingleColor.fragmentshader" ); //Slightly more involved
-	ProgramID = LoadShaders( "TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader" ); //Slightly more involved
+	CreateShaders();
 
-
-	// Get a handle for our "MVP" uniform
-	MatrixID = glGetUniformLocation(ProgramID, "MVP");
+	glfwSetMousePos(1024/2, 768/2); // Start by butting the cursor in the middle of the window (be carefull if you change the size of the window at runtime)
 
 	// Generate the set of points
 	sPoint *points = NULL;
@@ -398,16 +370,13 @@ int runRenderLoop()
 		gfPartitionColours[3+4*i] = 1.0f; //Alpha-chanel
 	}
 
-	GLuint vertexbuffer;
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glGenBuffers(1, &VertexBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, VertexBufferID);
 	glBufferData(GL_ARRAY_BUFFER, (8*N+4*40)*sizeof(gfVertices[0]), &gfVertices[0], GL_STATIC_DRAW); //Transfer to GPU memory (this is the point set)
 	glBufferSubData(GL_ARRAY_BUFFER,8*N*sizeof(gfVertices[0]),4*40*sizeof(gfPartition[0]),&gfPartition[0]); //Add the partition points to the display buffer
 	
-
-	GLuint colourbuffer;
-	glGenBuffers(1,&colourbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER,colourbuffer);
+	glGenBuffers(1,&ColorBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER,ColorBufferID);
 	glBufferData(GL_ARRAY_BUFFER, (8*N+4*40)*sizeof(gfColours[0]), &gfColours[0], GL_STATIC_DRAW); //Transfer to GPU memory (this colours both the point sets)
 	glBufferSubData(GL_ARRAY_BUFFER,8*N*sizeof(gfColours[0]),4*40*sizeof(gfPartitionColours[0]),&gfPartitionColours[0]); //Add the partition points to the display buffer
 
@@ -427,12 +396,12 @@ int runRenderLoop()
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]); // Send our transformation to the currently bound shader, in the "MVP" uniform
 
 		// 1-st attribute buffer : vertices
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, VertexBufferID);
 		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glEnableVertexAttribArray(0);
 
 		// 2-nd attribute buffer : colour
-		glBindBuffer(GL_ARRAY_BUFFER, colourbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, ColorBufferID);
 		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glEnableVertexAttribArray(1);
 
@@ -452,15 +421,8 @@ int runRenderLoop()
 	while( glfwGetKey( GLFW_KEY_ESC ) != GLFW_PRESS &&
 		glfwGetWindowParam( GLFW_OPENED ) ); // Check if the ESC key was pressed or the window was closed
 
-	
-	// Detach vertex attributes
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	// Cleanup VBO
-	glDeleteBuffers(1, &vertexbuffer);
-	glDeleteProgram(ProgramID);
-	glDeleteVertexArrays(1, &VertexArrayID);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// Destroy VBO and Shaders
+	Cleanup();
 
 	delete [] gfVertices; gfVertices = NULL;
 	delete [] gfColours; gfColours = NULL;
@@ -469,7 +431,7 @@ int runRenderLoop()
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
-
-	return 1;
+	// Exit program
+	exit( EXIT_SUCCESS );
 }
 

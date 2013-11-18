@@ -33,11 +33,10 @@ int main(int argc, char **argv)
 	Initialize(argc, argv);
 
 	//Register callback for window resize
-	glfwSetWindowSizeCallback( WindowResize );
+	//glfwSetWindowSizeCallback( WindowResize );
 
 	//Run the GO main loop
 	runRenderLoop();
-	//RenderFunction();
 	
 	// Clean-up and terminate Main
 	//delete [] points; points = NULL; //Dont forget to deallocate
