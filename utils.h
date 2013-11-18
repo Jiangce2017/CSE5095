@@ -30,7 +30,7 @@ typedef struct _point{
 		result.w = this->w - p.w;
 		return result;
 	};
-	virtual _point& operator+(const _point &p)const{ //Overloaded plus operator for points (vector difference) (use as p + q)
+	virtual _point& operator+(const _point &p)const{ //Overloaded plus operator for points (vector addition) (use as p + q)
 		_point result;
 		result.x = this->x + p.x;
 		result.y = this->y + p.y;

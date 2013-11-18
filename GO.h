@@ -22,6 +22,18 @@ using namespace glm;
 #include <shader.hpp>// Include a shader
 #include <controls.hpp>
 
-int doInitWnd(void);
-int runMainLoop(void);
+int runRenderLoop(void);
 bool sPoint2Array(sPoint const*, unsigned, GLfloat **);
+void DrawCircle(float, float, float, int, GLfloat**);
+
+void Initialize(int, char*[]);
+void InitWindow(int, char*[]);
+void GLFWCALL WindowResize( int width, int height ); //Window resize function
+void RenderFunction(void);
+void TimerFunction(int);
+void IdleFunction(void);
+void Cleanup(void);
+void CreateVBO(void);
+void DestroyVBO(void);
+void CreateShaders(void);
+void DestroyShaders(void);

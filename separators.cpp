@@ -29,10 +29,15 @@ int main(int argc, char **argv)
 	//printf("CenterPoint = {%f\t%f\t%f}\n",pntCenter.x,pntCenter.y,pntCenter.w);
 
 	//Initialize graphic output and open a window
-	doInitWnd();
+	//doInitWnd();
+	Initialize(argc, argv);
+
+	//Register callback for window resize
+	glfwSetWindowSizeCallback( WindowResize );
 
 	//Run the GO main loop
-	runMainLoop();
+	runRenderLoop();
+	//RenderFunction();
 	
 	// Clean-up and terminate Main
 	//delete [] points; points = NULL; //Dont forget to deallocate
