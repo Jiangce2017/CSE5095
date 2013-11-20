@@ -9,18 +9,13 @@
 //#include <stdlib.h>
 
 #define GLEW_STATIC // Depending on how you built/installed GLEW, you may want to change this
-#include <glew.h>// Include GLEW. Always include it before gl.h and glfw.h (magic, don't ask)
-//#include "./include/glew.h"
+#include <glew-1.9.0\include\GL\glew.h> //Always include GLEW before GLFW or GLM
+#include <glfw-2.7.6\include\GL\glfw.h> //Toolkit
+#include <glm-0.9.4.0\glm\glm.hpp> //Matrix manipulations
+#include <glm-0.9.4.0\glm\gtc\matrix_transform.hpp> //View transforms
+#include <glm-0.9.4.0\glm\gtc\quaternion.hpp> //Quaternions operations
 
-#include <glfw.h>// Include GLFW
-//#include "./include/glfw3.h"
-
-#include <glm.hpp>// Include GLM
-#include <.\gtc\matrix_transform.hpp> //View transforms
 using namespace glm;
-
-// GLEW libraries, shaders and control sequences I got from the interwebs
-#include <controls.hpp>
 
 void runRenderLoop(void);
 bool sPoint2Array(sPoint const*, unsigned, GLfloat **);
