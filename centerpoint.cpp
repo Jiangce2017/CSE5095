@@ -90,6 +90,30 @@ bool solveLinSys(sPoint *set, sPoint &pntOut)
 		alpha[i] = (aug[i][4]-sum)/aug[i][i];
 	}
 
+	// Now deal with degenerate cases (more than one alpha is 0)
+	char zeros = 0;
+	char zeroAlphas[3];
+	for (char i=0; i<5; i++) {
+		if (abs(alpha[i]) < 0.000001f) {
+			zeros += 1; //Count how many zeros
+			zeroAlphas[zeros-1] = i; //Store the index of which alpha was found to be zero
+		}
+	}
+
+	// If 2 or 3 alphas are zero (3 colinear points or 4 coplanar points) put some alphas that add to 0, it doesn't matter
+	switch (zeros){
+	case 2:
+		alpha[zeroAlphas[0]] = -1;
+		alpha[zeroAlphas[1]] =  1;
+		break;
+	case 3:
+		alpha[zeroAlphas[0]] = -2;
+		alpha[zeroAlphas[1]] =  1;
+		alpha[zeroAlphas[2]] =  1;
+		break;
+	default: ;
+		//No default action
+	}
 
 	// Print solution of alphas (for debugging)
 	if (debug){
@@ -164,8 +188,8 @@ bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
 			pntGroup[i][j] = pntSet[i*uNewn+j];
 		//Recursivelly call getCenterPoint for these 5 groups
 		getCenterPoint(pntGroup[i],uNewn,ppntCenter[i]);
-		//When done dispose of the current group (out of 5)
-		delete [] pntGroup[i];
+		//When done, dispose of the current group (out of 5)
+		delete [] pntGroup[i]; pntGroup[i] = NULL;
 	}
 	//Deallocate all 5 groups
 	delete [] pntGroup; pntGroup = NULL;
@@ -189,10 +213,20 @@ bool getCenterPoint(sPoint const* pntSet, int n, sPoint &pntOut)
 // Function getPartition(...). Given the R^3 center point of a point set in R^2 lifted onto a paraboloid, 
 // calculates the partition of the set using the simplified Miller-Thurston Algorithm.
 // Output is the radius of a circle (the partition) and its center in R^2 (the w-coordinate will be set to 0)
-bool getPartition(sPoint const* sCP, double* dRad, sPoint* sCenter)
+bool getPartition(sPoint const* pntSet, unsigned n, sPoint* sCenterPoint, double* dPartitionRadius, sPoint* sPartitionCenter)
 {
-	// This is needed in the calculation of the radius
-	double dNormSq = pow(sCP->x,2) + pow(sCP->y,2);
+	// Calculate their CenterPoint
+	// When the set is very dense and points are very close to each other, the solver cannot get the centerpoint
+	getCenterPoint(pntSet, n, *sCenterPoint);
+
+	// Since all 3D points are in the Z+ half-space, the w-coordinate cannot be zero or negative
+	if (sCenterPoint->w < 0.001f) 
+		fprintf( stderr, "The point set doesn't satisfy the general position requirement.\n" );
+	else
+		printf("CenterPoint = {%f; %f; %f}\n", sCenterPoint->x, sCenterPoint->y, sCenterPoint->w);
+
+	// Norm squared: This is needed in the calculation of the radius
+	double dNormSq = pow(sCenterPoint->x,2) + pow(sCenterPoint->y,2);
 	// Randomly generate a vector in R^3 and then normalize it
 	sPoint sVec;
 	sVec.x = (rand() % 2000 + 1) - 1000;
@@ -206,10 +240,15 @@ bool getPartition(sPoint const* sCP, double* dRad, sPoint* sCenter)
 	double dInvNormVec = 1/sqrt( pow(sVec.x,2) + pow(sVec.y,2) + pow(sVec.w,2) );
 	sVec = sVec * dInvNormVec;
 	// Calculate the radius of the partition (circle)
-	*dRad = sqrt(sCP->w - dNormSq)/abs(sVec.w);
+	*dPartitionRadius = sqrt(sCenterPoint->w - dNormSq)/abs(sVec.w);
 	// Calculate the center of the circle
-	*sCenter = *sCP - sVec * *dRad;
-	(*sCenter).w = 0.0f;
+	*sPartitionCenter = *sCenterPoint - sVec * *dPartitionRadius;
+	(*sPartitionCenter).w = 0.0f;
+
+	if (sCenterPoint->w > 0.001f) {
+		printf("Partition center = {%f; %f; %f}\n", sPartitionCenter->x, sPartitionCenter->y, sPartitionCenter->w);
+		printf("Partition Radius = %f\n", *dPartitionRadius);
+	}
 
 	return true;
 }

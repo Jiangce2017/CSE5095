@@ -65,6 +65,9 @@ bool generatePoints(sPoint **pOut, unsigned &iCount)
 			(*pOut)[i] = pntCurrent;
 		}
 	}
+
+	printf("\nGenerated %d points in R^2\n",iCount);
+
 	//Output the points for debugging
 	//for (unsigned i=0; i<iCount; i++)
 	//	printf("P[%d] = {%f\t%f\t%f}\n",i,(*pOut)[i].x,(*pOut)[i].y,(*pOut)[i].w);
