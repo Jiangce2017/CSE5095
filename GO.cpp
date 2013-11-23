@@ -49,7 +49,10 @@ static const glm::mat4 ModelMatrix = glm::mat4(1.0f);
 
 static int do_redraw = 1, // Do redraw? (repaint the window only as needed)
 		   xpos = 0, // Mouse position
-		   ypos = 0; // Mouse position
+		   ypos = 0, // Mouse position
+		   Points2D =	1,	//Display the 2D points?
+		   Points3D =	1,	//Display the 3D points?
+		   Separator =	1;	//Display the Separator?
 
 // IDs for VBOs and shaders
 GLuint ProgramID, //ID of our shader
@@ -94,7 +97,7 @@ static const GLchar* FragmentShader =
 
 
 // Recompute the MVP for current view setup
-void updateView(void)
+void UpdateView(void)
 {
 	//printf("Vangle %f\n", verticalAngle);
 	//printf("Hangle %f\n", horizontalAngle);
@@ -177,6 +180,15 @@ void GLFWCALL KeyboardFun(int key, int state)
 			horizontalAngle = 2.0f * M_PI;
 			vPosition = glm::vec3( 0.0f, 0.0f, 20.0f );
 			break;
+		case GLFW_KEY_LEFT:
+			Points2D = (Points2D) ? 0 : 1; //Toggle the display of 2D points
+			break;
+		case GLFW_KEY_DOWN:
+			Points3D = (Points3D) ? 0 : 1; //Toggle the display of 3D points
+			break;
+		case GLFW_KEY_RIGHT:
+			Separator = (Separator) ? 0 : 1; //Toggle the display of the separator
+			break;
 		default:
 			break; //No default key mapped
 		}
@@ -213,7 +225,7 @@ void GLFWCALL windowRefreshFun(void)
 }
 
 
-// Draw a 2D grid (used to orient better)
+// Draw a 2D grid (used to orient better) needs much work
 static void drawGrid(float scale, int steps, GLfloat *gridVertex, GLfloat *gridColour)
 {
     int i;
@@ -339,6 +351,16 @@ bool sPoint2VertexArray(sPoint const* sPtIn, unsigned n, GLfloat **gfOut)
 	return true;
 }
 
+// Projects a set of 3D points onto a plane (now is the XY plane) (operates with vertex arrays)
+bool VA3DtoVA2D(GLfloat const* gfInput, unsigned n, GLfloat **gfOutput)
+{
+	*gfOutput = new GLfloat[3*n];
+	for (unsigned i=0; i<3*n; i++)
+		(*gfOutput)[i] = ((i+1) % 3 == 0) ? 0.0f : gfInput[i];
+	// Every thirt number (the Z-coordinate) is set to zero, otherwise it's copied from input set
+	return true;
+}
+
 // Creates a colour array to load onto the display buffer
 bool sPoint2ColourArray(sPoint const* sPtIn, unsigned n, GLfloat **gfOut)
 {
@@ -350,46 +372,103 @@ bool sPoint2ColourArray(sPoint const* sPtIn, unsigned n, GLfloat **gfOut)
 		(*gfOut)[2+3*i] = 0.4f;
 	}
 	return true;
+	// Pink: 1.0f 0.1f 0.4f
+}
+
+// This is a very peculiar function. It draws a circle but not using sin/cos, using Newton's law! :-)
+void DrawCircle(sPoint const* center, float r, int iNoSegments, GLfloat **gfVertices) 
+{ 
+	float theta = 2 * 3.1415926 / float(iNoSegments-1); 
+	float tangetial_factor = tanf(theta);//calculate the tangential factor 
+	float radial_factor = cosf(theta);//calculate the radial factor 
+	float x = r; //we start at angle = 0 
+	float y = 0; 
+
+	*gfVertices = new GLfloat[iNoSegments*3];
+    
+	// Calculate up until the next-to-last point
+	for(int ii = 0; ii < iNoSegments - 1; ii++) 
+	{ 
+		(*gfVertices)[ii*3+0] = x + center->x;
+		(*gfVertices)[ii*3+1] = y + center->y;
+		(*gfVertices)[ii*3+2] = 0.0f;
+        
+		//Calculate the tangential vector {radial vector is (x,y)}. Simply flip coordinates and negate one
+		float tx = -y; 
+		float ty = x; 
+        
+		//Add the tangential vector 
+		x += tx * tangetial_factor; 
+		y += ty * tangetial_factor; 
+        
+		//Correction using the radial factor 
+		x *= radial_factor; 
+		y *= radial_factor; 
+	} 
+
+	//Last point is identical to the first (to have a closed loop)
+	for(int ii = 0; ii < 3; ii++) 
+		(*gfVertices)[(iNoSegments-1)*3+ii] = (*gfVertices)[ii];
+
 }
 
 // Creates and bounds a VBO to an array of vertices plus colour
-//mofify to take argument (GLfloat* vertexArray, GLfloat* colourArray, N = # vertices)
-void CreateVBO(void)
+void CreateVBO(GLuint *uiN, GLuint const* uiPartSegms)
 {
 	// Generate the set of points
 	sPoint *points = NULL;
-	unsigned N;
-	generatePoints(&points,N);
-
-	// Calculate the partition
 	sPoint pntCenter, sPartCenter;
 	double dRadius;
-	getPartition(points,N,&pntCenter,&dRadius,&sPartCenter);
+	do {
+		generatePoints(&points, *uiN);
+		getPartition(points, *uiN, &pntCenter, &dRadius, &sPartCenter); // Calculate the partition
+	} while (abs(pntCenter.w) < 0.0001f);
 
-	// Arrange the points into an array
-	static GLfloat *gfVertices = NULL;
-	sPoint2VertexArray(points, N, &gfVertices);
-	static GLfloat *gfColours = NULL;
-	sPoint2VertexArray(points, N, &gfColours);
+	// Arrange the points into an array (vertex position)
+	GLfloat *gfVertices1 = NULL; //3D points (the paraboloid)
+	sPoint2VertexArray(points, *uiN, &gfVertices1);
 
+	GLfloat *gfVertices2 = NULL; // 2D points (the input set)
+	VA3DtoVA2D(gfVertices1, *uiN, &gfVertices2);
+
+	GLfloat *gfVertices3 = NULL; // Partition
+	DrawCircle(&sPartCenter, dRadius, *uiPartSegms, &gfVertices3);
+
+	// Assign vertices colour
+	GLfloat *gfColours1 = NULL, *gfColours2 = NULL, *gfColours3 = NULL;
+	sPoint2ColourArray(points, *uiN, &gfColours1);
+	sPoint2VertexArray(points, *uiN, &gfColours2); //This makes a nice coloured point set and it seems to never crash (although is incorrect to call this function for colours)
+	sPoint2VertexArray(points, *uiPartSegms, &gfColours3);
+
+	auto auPointsBufferSize = 3 * (*uiN) * sizeof(GLfloat); //How much memory the points take in the buffer (one set, either the 3D or the 2D, they are the same size)
+	auto auPartBufferSize   = 3 * (*uiPartSegms) * sizeof(GLfloat); //Partition takes this much space
+	auto auTotalBufferSize  = 2 * auPointsBufferSize + auPartBufferSize; //Calculate how much memory the buffer requires
+
+	// Add the vertex location to the buffer
 	glGenBuffers(1, &VertexBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, VertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, 3*N*sizeof(gfVertices[0]), &gfVertices[0], GL_STATIC_DRAW); //Transfer to GPU memory (this is the point set)
-	//glBufferData(GL_ARRAY_BUFFER, (8*N+4*40)*sizeof(gfVertices[0]), &gfVertices[0], GL_STATIC_DRAW); //Transfer to GPU memory (this is the point set)
-	//glBufferSubData(GL_ARRAY_BUFFER,8*N*sizeof(gfVertices[0]),4*40*sizeof(gfPartition[0]),&gfPartition[0]); //Add the partition points to the display buffer
+	glBufferData(GL_ARRAY_BUFFER, auTotalBufferSize, &gfVertices1[0], GL_STATIC_DRAW); //Transfer to GPU memory the 3D points
+	glBufferSubData(GL_ARRAY_BUFFER, auPointsBufferSize, auPointsBufferSize, &gfVertices2[0]); //Add the 2D points
+	glBufferSubData(GL_ARRAY_BUFFER, 2 * auPointsBufferSize, auPartBufferSize, &gfVertices3[0]); //Add the partition
 	
+	// Add the colour information to the buffer
 	glGenBuffers(1,&ColorBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER,ColorBufferID);
-	glBufferData(GL_ARRAY_BUFFER, 3*N*sizeof(gfColours[0]), &gfColours[0], GL_STATIC_DRAW); //Transfer to GPU memory (this colours both the point sets)
-	//glBufferData(GL_ARRAY_BUFFER, (8*N+4*40)*sizeof(gfColours[0]), &gfColours[0], GL_STATIC_DRAW); //Transfer to GPU memory (this colours both the point sets)
-	//glBufferSubData(GL_ARRAY_BUFFER,8*N*sizeof(gfColours[0]),4*40*sizeof(gfPartitionColours[0]),&gfPartitionColours[0]); //Add the partition points to the display buffer
+	glBufferData(GL_ARRAY_BUFFER, auTotalBufferSize, &gfColours1[0], GL_STATIC_DRAW); //Transfer to GPU memory (this colours both the point sets)
+	glBufferSubData(GL_ARRAY_BUFFER, auPointsBufferSize, auPointsBufferSize, &gfColours2[0]); //Add the partition points to the display buffer
+	glBufferSubData(GL_ARRAY_BUFFER, 2 * auPointsBufferSize, auPartBufferSize, &gfColours3[0]); //Add the partition points to the display buffer
 
-	//Dont forget to deallocate if you don't need them anymore
+	//Don't forget to deallocate if you don't need them anymore
 	delete [] points; points = NULL;
-	delete [] gfVertices; gfVertices = NULL;
-	delete [] gfColours; gfColours = NULL;
+	delete [] gfVertices1; gfVertices1 = NULL;
+	delete [] gfVertices2; gfVertices2 = NULL;
+	delete [] gfVertices3; gfVertices3 = NULL;
+	delete [] gfColours1;  gfColours1  = NULL;
+	delete [] gfColours2;  gfColours2  = NULL;
+	delete [] gfColours3;  gfColours3  = NULL;
  }
 
+// Does what it sais
 void DestroyVBO(void)
 {
 	glDisableVertexAttribArray(0);
@@ -404,6 +483,7 @@ void DestroyVBO(void)
     glDeleteVertexArrays(1, &VertexArrayID);
 }
 
+// Does what it sais
 void CreateShaders(void)
 {
     // Create and compile the GLSL vertex shader 
@@ -427,6 +507,7 @@ void CreateShaders(void)
 	MatrixID = glGetUniformLocation(ProgramID, "MVP");
  }
 
+// Does what it sais
 void DestroyShaders(void)
 { 
     glUseProgram(0); //Invoke current program
@@ -440,115 +521,24 @@ void DestroyShaders(void)
     glDeleteProgram(ProgramID);
 }
 
+// Does what it sais
 void Cleanup(void)
 {
 	DestroyVBO();
     DestroyShaders();
 }
 
-
-void DrawCircle(float cx, float cy, float r, int num_segments, GLfloat **gfOut) 
-{ 
-	float theta = 2 * 3.1415926 / float(num_segments-1); 
-	float tangetial_factor = tanf(theta);//calculate the tangential factor 
-	float radial_factor = cosf(theta);//calculate the radial factor 
-	float x = r; //we start at angle = 0 
-	float y = 0; 
-
-	*gfOut = new GLfloat[num_segments*4];
-    
-	for(int ii = 0; ii < num_segments-1; ii++) 
-	{ 
-		(*gfOut)[ii*4+0] = x + cx;
-		(*gfOut)[ii*4+1] = y + cy;
-		(*gfOut)[ii*4+2] = 0.0f;
-		(*gfOut)[ii*4+3] = 1.0f;
-        
-		//Calculate the tangential vector {radial vector is (x,y)}. Simply flip coordinates and negate one
-		float tx = -y; 
-		float ty = x; 
-        
-		//add the tangential vector 
-		x += tx * tangetial_factor; 
-		y += ty * tangetial_factor; 
-        
-		//correct using the radial factor 
-		x *= radial_factor; 
-		y *= radial_factor; 
-	} 
-	//Last point is identical to the first (to have a closed loop)
-	(*gfOut)[(num_segments-1)*4+0] = (*gfOut)[0];
-	(*gfOut)[(num_segments-1)*4+1] = (*gfOut)[1];
-	(*gfOut)[(num_segments-1)*4+2] = (*gfOut)[2];
-	(*gfOut)[(num_segments-1)*4+3] = (*gfOut)[3];
-}
-
+// Main graphics loop
 void runRenderLoop()
 {
 	// Start by butting the cursor in the middle of the window 
 	glfwSetMousePos(CurrentWidth/2, CurrentHeight/2); 
 
-	CreateVBO();
+	// Create the VBOs and shaders
+	GLuint uiNPoints, uiNSegms = 100;
+	CreateVBO(&uiNPoints, &uiNSegms);
 	CreateShaders();
 	
-	//// Generate the set of points
-	//sPoint *points = NULL;
-	//unsigned N;
-	//generatePoints(&points,N);
-
-	//// Calculate the partition
-	//sPoint pntCenter, sPartCenter;
-	//double dRadius;
-	//getPartition(points,N,&pntCenter,&dRadius,&sPartCenter);
-
-
-	// Sample the partition to we can show it on the screen
-	//GLfloat *gfPartition = NULL;
-	//DrawCircle(sPartCenter.x,sPartCenter.y,dRadius,40,&gfPartition);
-	
-	// Arrange the points into an array
-	//static GLfloat *gfVertices = NULL;
-	//sPoint2VertexArray(points, N, &gfVertices);
-	//static GLfloat *gfColours = NULL;
-	//sPoint2VertexArray(points, N, &gfColours);
-	//delete [] points; points = NULL; 
-
-	// Colour the points on the paraboloid in yellow and the ones in the plane with magenta (sort-of)
-	//static GLfloat *gfColours = new GLfloat[8*N];
-	//for (unsigned i=0; i<N; i++)
-	//{
-	//	gfColours[0+4*i] = 1.0f; //R
-	//	gfColours[1+4*i] = 1.0f; //G
-	//	gfColours[2+4*i] = 0.1f; //B
-	//	gfColours[3+4*i] = 1.0f; //Alpha-chanel
-	//	gfColours[4*(N+i)+0] = 1.0f; //R
-	//	gfColours[4*(N+i)+1] = 0.1f; //G
-	//	gfColours[4*(N+i)+2] = 0.4f; //B
-	//	gfColours[4*(N+i)+3] = 1.0f; //Alpha-chanel
-	//}
-
-	// Colour the points on the partition in white
-	//static GLfloat *gfPartitionColours = new GLfloat[4*40];
-	//for (unsigned i=0; i<40; i++)
-	//{
-	//	gfPartitionColours[0+4*i] = 1.0f; //R
-	//	gfPartitionColours[1+4*i] = 1.0f; //G
-	//	gfPartitionColours[2+4*i] = 1.0f; //B
-	//	gfPartitionColours[3+4*i] = 1.0f; //Alpha-chanel
-	//}
-
-	//glGenBuffers(1, &VertexBufferID);
-	//glBindBuffer(GL_ARRAY_BUFFER, VertexBufferID);
-	//glBufferData(GL_ARRAY_BUFFER, 3*N*sizeof(gfVertices[0]), &gfVertices[0], GL_STATIC_DRAW); //Transfer to GPU memory (this is the point set)
-	////glBufferData(GL_ARRAY_BUFFER, (8*N+4*40)*sizeof(gfVertices[0]), &gfVertices[0], GL_STATIC_DRAW); //Transfer to GPU memory (this is the point set)
-	////glBufferSubData(GL_ARRAY_BUFFER,8*N*sizeof(gfVertices[0]),4*40*sizeof(gfPartition[0]),&gfPartition[0]); //Add the partition points to the display buffer
-	//
-	//glGenBuffers(1,&ColorBufferID);
-	//glBindBuffer(GL_ARRAY_BUFFER,ColorBufferID);
-	//glBufferData(GL_ARRAY_BUFFER, 3*N*sizeof(gfColours[0]), &gfColours[0], GL_STATIC_DRAW); //Transfer to GPU memory (this colours both the point sets)
-	////glBufferData(GL_ARRAY_BUFFER, (8*N+4*40)*sizeof(gfColours[0]), &gfColours[0], GL_STATIC_DRAW); //Transfer to GPU memory (this colours both the point sets)
-	////glBufferSubData(GL_ARRAY_BUFFER,8*N*sizeof(gfColours[0]),4*40*sizeof(gfPartitionColours[0]),&gfPartitionColours[0]); //Add the partition points to the display buffer
-
 	do{
 		if (do_redraw)
 		{
@@ -556,14 +546,14 @@ void runRenderLoop()
 			glUseProgram(ProgramID); // Use our shader
 
 			// Recalculate scene (using MVP matrix)
-			updateView();
+			UpdateView();
 
 			// 1rst attribute buffer : vertices
 			glEnableVertexAttribArray(0);
 			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferID);
 			glVertexAttribPointer(
 				0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
-				3,                  // size
+				3,                  // size (3Dimensional points)
 				GL_FLOAT,           // type
 				GL_FALSE,           // normalized?
 				0,                  // stride
@@ -575,20 +565,17 @@ void runRenderLoop()
 			glBindBuffer(GL_ARRAY_BUFFER, ColorBufferID);
 			glVertexAttribPointer(
 				1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-				3,                                // size
+				3,                                // size (3 = RGB)
 				GL_FLOAT,                         // type
 				GL_FALSE,                         // normalized?
 				0,                                // stride
 				(void*)0                          // array buffer offset
 			);
 
-			//// Draw the triangle !
-			//glDrawArrays(GL_TRIANGLES, 0, 12*3); // 12*3 indices starting at 0 -> 12 triangles
-
-			//// Draw the whole thing
-			glDrawArrays(GL_POINTS, 0, 15625); //Draw points on the paraboloid
-			//glDrawArrays(GL_POINTS, N, N); //Draw points in the plane
-			//glDrawArrays(GL_LINE_STRIP, 2*N, 40); //Draw the partition
+			//// Draw the whole thing (if visibility is enabled for each item)
+			if (Points3D)	glDrawArrays(GL_POINTS, 0, uiNPoints); //Draw points on the paraboloid
+			if (Points2D) 	glDrawArrays(GL_POINTS, uiNPoints, uiNPoints); //Draw points in the plane
+			if (Separator)	glDrawArrays(GL_LINE_STRIP, 2*uiNPoints, uiNSegms); //Draw the partition
 
 			// Detach vertex attributes
 			glDisableVertexAttribArray(0);
@@ -601,23 +588,19 @@ void runRenderLoop()
 			glfwSwapBuffers();
 		}
 		
-		// Wait for new events
+		// Don't loop aimlessly, you'll get dizzy. Wait for new events
         glfwWaitEvents();
 	} 
 	while( glfwGetKey( GLFW_KEY_ESC ) != GLFW_PRESS &&
 		   glfwGetWindowParam( GLFW_OPENED ) ); // Check if the ESC key was pressed or the window was closed
 
-	// Destroy VBO and Shaders
+	// Destroy VBOs and Shaders
 	Cleanup();
-
-	//delete [] gfVertices; gfVertices = NULL;
-	//delete [] gfColours; gfColours = NULL;
-	//delete [] gfPartition; gfPartition = NULL;
-	//delete [] gfPartitionColours; gfPartitionColours = NULL;
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
 	glfwCloseWindow();
+
 	// Exit program
 	exit( EXIT_SUCCESS );
 }
