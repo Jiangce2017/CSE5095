@@ -6,10 +6,12 @@
 #include "rnd.h"
 #include "centerpoint.h"
 #include "utils.h"
+//#include "GO.h"
 
 //OpenGL includes
 #include <glew-1.10.0\include\GL\glew.h>
 #include <glfw-2.7.6\include\GL\glfw.h> //Toolkit
+//#include <glfw-3.0.3\include\GLFW\glfw3.h>
 #include <glm-0.9.4.0\glm\glm.hpp> //Matrix manipulations
 #include <glm-0.9.4.0\glm\gtc\matrix_transform.hpp> //View transforms
 #include <glm-0.9.4.0\glm\gtc\quaternion.hpp> //Quaternions operations
@@ -276,18 +278,19 @@ void InitWindow(void)
 		fprintf( stderr, "Failed to initialize GLFW\n" );
 		exit(EXIT_FAILURE);
 	}
-
+	
 	glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4);
 	glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
 	glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 3);
 	glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwSwapInterval(1);
 
-	// Open a window and create its OpenGL context
-	WindowHandle = glfwOpenWindow( CurrentWidth, CurrentHeight, 0,0,0,0, 32,0, GLFW_WINDOW );
+	// Open a window and create its OpenGL context (use mostly default parameters)
+	WindowHandle = glfwOpenWindow( CurrentWidth, CurrentHeight, 0,0,0,8,32,0, GLFW_WINDOW );
 
 	if( WindowHandle < 1 )
 	{
-		fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible.\n" );
+		fprintf( stderr, "Failed to open GLFW window.\n" );
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}
