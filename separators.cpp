@@ -2,7 +2,11 @@
 
 
 // Utilities and System Includes
-#include <iostream>
+//#include <iostream>
+#include <stdio.h>
+//#include <SDL2-2.0.1\include\SDL.h>
+//#include "Graphics.h"
+//#include <tchar.h>
 
 // Application includes
 //#include "utils.h"
@@ -15,14 +19,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
 ////////////////////////////////////////////////////////////////////////////////
-int main(int argc, char **argv)
+int main(int argc, char** argv)// Works only for GLFW
+//int _tmain(int argc, char* argv[])// Works only for SDL2
 {
     printf("[GeometricSeparators] - Starting...\n");
 	
-	//Initialize a window and its OGL context
+	////Initialize a window and its OGL context
 	Initialize();
-
-	//Run the GO main loop
+	////Run the GO main loop
 	runRenderLoop();
 	
 	printf("[GeometricSeparators] - Exit\n");

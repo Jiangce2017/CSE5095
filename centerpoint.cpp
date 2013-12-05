@@ -220,9 +220,7 @@ bool getPartition(sPoint const* pntSet, unsigned n, sPoint* sCenterPoint, double
 	getCenterPoint(pntSet, n, *sCenterPoint);
 
 	// Since all 3D points are in the Z+ half-space, the w-coordinate cannot be zero or negative
-	if (sCenterPoint->w < 0.001f) 
-		fprintf( stderr, "The point set doesn't satisfy the general position requirement.\n" );
-	else
+	if (sCenterPoint->w > 0.001f)
 		printf("CenterPoint = {%f; %f; %f}\n", sCenterPoint->x, sCenterPoint->y, sCenterPoint->w);
 
 	// Norm squared: This is needed in the calculation of the radius

@@ -12,8 +12,8 @@
 //#define GLEW_BUILD
 
 #include <glew-1.10.0\include\GL\glew.h>
-#include <glfw-3.0.3\include\GLFW\glfw3.h>
-//#include <glfw-2.7.6\include\GL\glfw.h> //Toolkit
+//#include <glfw-3.0.3\include\GLFW\glfw3.h> //Newer toolkit
+#include <glfw-2.7.6\include\GL\glfw.h> //Toolkit
 #include <glm-0.9.4.0\glm\glm.hpp> //Matrix manipulations
 #include <glm-0.9.4.0\glm\gtc\matrix_transform.hpp> //View transforms
 
